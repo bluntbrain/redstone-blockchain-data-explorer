@@ -21,8 +21,8 @@ This project provides a web-based interface to explore and display data from the
 
 ### Clone the Repository
 ```bash
-git clone <repository-url>
-cd <project-directory>
+git clone https://github.com/bluntbrain/redstone-blockchain-data-explorer
+cd redstone-blockchain-data-explorer
 ```
 Install Dependencies
 ```bash
