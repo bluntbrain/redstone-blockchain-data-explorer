@@ -3,6 +3,8 @@
 ## Overview
 This project provides a web-based interface to explore and display data from the Redstone Holesky Blockchain, specifically focusing on game data. Utilizing the Primodium Indexer for data retrieval, it features a PostgreSQL database for storage, a Node.js backend for data manipulation and API endpoints, and a simple frontend for user interaction.
 
+![Example GIF](demo.gif)
+
 ### Features
 - Data retrieval from the Redstone Holesky Blockchain via Primodium Indexer.
 - PostgreSQL database integration for efficient data storage.
