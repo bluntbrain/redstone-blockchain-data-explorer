@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SkyStrife Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="main-header">
+      <div class="header-content">
+        <img src="logo.png" alt="SkyStrife Logo" class="logo" />
+        <nav class="main-nav">
+          <a href="#" class="nav-link active" id="nav-combat">Combat</a>
+          <a href="#" class="nav-link" id="nav-players">Players</a>
+          <a href="#" class="nav-link" id="nav-matches">Matches</a>
+        </nav>
+        <div class="user-controls">
+          <a href="#" class="user-link">Login</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="active-matches">
+        <div class="data-title-bar">
+          <h2 id="data-title">Combat Data</h2>
+          <input
+            type="text"
+            id="search-bar"
+            placeholder="Search by Player Address"
+            style="display: none"
+            oninput="searchData(this.value)"
+          />
+        </div>
+
+        <div id="table-container"></div>
+        <div id="pagination-container"></div>
+      </section>
+    </main>
+
+    <script>
+      const pageSize = 10;
+      let currentEndpoint = "combat";
+      const dataTitle = document.getElementById("data-title");
+
+      function updateActiveNavLink(activeLinkId) {
+        document.querySelectorAll(".nav-link").forEach((link) => {
+          link.classList.remove("active");
+        });
+        document.getElementById(activeLinkId).classList.add("active");
+      }
+
+      function updateDataTitle(endpoint) {
+        let titleText = "";
+        switch (endpoint) {
+          case "combat":
+            titleText = "Combat Data";
+            break;
+          case "player":
+            titleText = "Player Data";
+            break;
+          case "match_player":
+            titleText = "Match Player Data";
+            document.getElementById("search-bar").style.display =
+              "inline-block";
+            break;
+          default:
+            titleText = "Data";
+        }
+        dataTitle.textContent = titleText;
+        if (endpoint !== "match_player") {
+          document.getElementById("search-bar").style.display = "none";
+        }
+      }
+      document
+        .getElementById("nav-combat")
+        .addEventListener("click", function () {
+          currentEndpoint = "combat";
+          updateActiveNavLink("nav-combat");
+          updateDataTitle(currentEndpoint);
+          fetchTableData(1);
+        });
+
+      document
+        .getElementById("nav-players")
+        .addEventListener("click", function () {
+          currentEndpoint = "player";
+          updateActiveNavLink("nav-players");
+          updateDataTitle(currentEndpoint);
+          fetchTableData(1);
+        });
+
+      document
+        .getElementById("nav-matches")
+        .addEventListener("click", function () {
+          currentEndpoint = "match_player";
+          updateActiveNavLink("nav-matches");
+          updateDataTitle(currentEndpoint);
+          fetchTableData(1);
+        });
+
+      let searchQuery = "";
+
+      function fetchTableData(page, search = "") {
+        fetch(
+          `http://localhost:3003/api/table/${currentEndpoint}?page=${page}&search=${search}`
+        )
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Network response was not ok");
+            }
+            return response.json();
+          })
+          .then((data) => {
+            renderTable(data.rows);
+            renderPagination(data.page, data.totalPages);
+          })
+          .catch((error) => {
+            console.error("Error fetching table data:", error);
+          });
+      }
+
+      function searchData(value) {
+        searchQuery = value;
+        fetchTableData(1, searchQuery);
+      }
+
+      function renderTable(rows) {
+        const table = document.createElement("table");
+        table.className = "matches-table";
+
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+        let headers = [];
+        let sliceLength = 10;
+        if (currentEndpoint === "player") {
+          headers = ["Match Entity", "Entity", "Value"];
+          sliceLength = 50;
+        } else if (currentEndpoint === "match_player") {
+          headers = ["Match Entity", "Player Address", "Player Entity"];
+          sliceLength = 50;
+        } else {
+          headers = [
+            "Match Entity",
+            "Entity",
+            "Health",
+            "Max Health",
+            "Armor",
+            "Strength",
+            "Structure Strength",
+            "Counter Strength",
+          ];
+        }
+
+        headers.forEach((headerText) => {
+          const header = document.createElement("th");
+          header.textContent = headerText;
+          headerRow.appendChild(header);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+        rows.forEach((rowData) => {
+          const row = document.createElement("tr");
+          headers.forEach((header) => {
+            const cell = document.createElement("td");
+            let textContent =
+              rowData[header.toLowerCase().replace(/ /g, "_")] || "";
+
+            if (textContent.length > sliceLength) {
+              const clickableSpan = document.createElement("span");
+              clickableSpan.textContent =
+                textContent.substring(0, sliceLength) + "...";
+              clickableSpan.style.cursor = "pointer";
+              clickableSpan.title = "Click to see full text";
+              clickableSpan.onclick = () => alert(textContent);
+              cell.appendChild(clickableSpan);
+            } else {
+              cell.textContent = textContent;
+            }
+            row.appendChild(cell);
+          });
+          tbody.appendChild(row);
+        });
+        table.appendChild(tbody);
+
+        document.getElementById("table-container").innerHTML = "";
+        document.getElementById("table-container").appendChild(table);
+      }
+
+      function renderPagination(currentPage, totalPages) {
+        const paginationContainer = document.getElementById(
+          "pagination-container"
+        );
+        paginationContainer.innerHTML = "";
+
+        function createPageButton(page) {
+          const pageButton = document.createElement("button");
+          pageButton.textContent = page;
+          pageButton.className = "pagination-button";
+          if (page === currentPage) {
+            pageButton.disabled = true;
+          }
+          pageButton.addEventListener("click", function () {
+            fetchTableData(page);
+          });
+          return pageButton;
+        }
+
+        if (currentPage > 1) {
+          paginationContainer.appendChild(createPageButton(1));
+        }
+
+        if (currentPage > 2) {
+          paginationContainer.appendChild(createPageButton(currentPage - 1));
+        }
+
+        paginationContainer.appendChild(createPageButton(currentPage));
+
+        if (currentPage < totalPages - 1) {
+          paginationContainer.appendChild(createPageButton(currentPage + 1));
+        }
+
+        if (currentPage < totalPages) {
+          paginationContainer.appendChild(createPageButton(totalPages));
+        }
+      }
+
+      fetchTableData(1);
+    </script>
+  </body>
+</html>
